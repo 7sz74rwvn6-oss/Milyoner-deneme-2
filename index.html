@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Kim Milyoner Olmak İster</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial;background:#0b0d27;color:#fff}
+.container{max-width:900px;margin:auto;padding:15px;text-align:center}
+#startScreen{margin-top:120px}
+#timer{font-size:32px;color:#ffd700}
+#question{font-size:22px;margin:15px 0}
+.answers button{
+ width:100%;margin:6px 0;padding:12px;font-size:16px;
+ background:#2d2f55;color:#fff;border:none;border-radius:8px
+}
+.correct{background:#00a84f!important}
+.wrong{background:#d62828!important}
+#jokers button{margin:4px;padding:6px 10px;font-size:12px}
+#jokers button.used{opacity:.4;pointer-events:none}
+#money{margin-top:15px;background:#1a1c3a;padding:10px;border-radius:8px;text-align:left}
+.money-step.active{background:#ffd700;color:#000}
+.money-step.passed{background:#00a84f;color:#000}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div id="startScreen">
+<h1>Kim Milyoner Olmak İster</h1>
+<button onclick="startGame()" style="padding:15px 30px;font-size:18px">BAŞLA</button>
+</div>
+
+<div id="gameScreen" style="display:none">
+<div id="timer">45</div>
+<div id="question"></div>
+<div class="answers" id="answers"></div>
+
+<div id="jokers">
+<button id="j50" onclick="useJoker('j50',joker5050)">50:50</button>
+<button id="jAud" onclick="useJoker('jAud',jokerAudience)">Seyirci</button>
+<button id="jTel" onclick="useJoker('jTel',jokerPhone)">Telefon</button>
+<button id="jDouble" onclick="useJoker('jDouble',jokerDouble)">Çift</button>
+<button id="jTime" onclick="useJoker('jTime',jokerTime)">Süre</button>
+<button id="jChange" onclick="useJoker('jChange',jokerChange)">Değiştir</button>
+<button id="jRemove" onclick="useJoker('jRemove',jokerRemove)">Ele</button>
+</div>
+
+<div id="money"></div>
+</div>
+</div>
+
+<audio id="correctSound" src="correct.mp3"></audio>
+<audio id="wrongSound" src="wrong.mp3"></audio>
+
+<script>
+// ================== SORULAR ==================
+// BURAYA KENDİ 120 SORULUK pool DİZİNİNİ AYNEN YAPIŞTIR
+const pool = [
+{q:"Türkiye'nin başkenti neresidir?",a:["İstanbul","Ankara","İzmir","Bursa"],c:1},
+{q:"Dünyanın en büyük okyanusu hangisidir?",a:["Atlas","Hint","Büyük Okyanus","Arktik"],c:2},
+{q:"Atatürk'ün doğum yılı kaçtır?",a:["1878","1879","1880","1881"],c:3},
+{q:"İnsan vücudunda kaç kemik vardır?",a:["206","208","210","212"],c:0},
+{q:"En uzun nehir hangisidir?",a:["Nil","Amazon","Mississippi","Yangtze"],c:1},
+{q:"Hangi gezegen Kızıl Gezegen olarak bilinir?",a:["Venüs","Mars","Jüpiter","Satürn"],c:1},
+{q:"Türkiye kaç coğrafi bölgeden oluşur?",a:["5","6","7","8"],c:2},
+{q:"İstiklal Marşı'nın yazarı kimdir?",a:["Namık Kemal","Mehmet Akif Ersoy","Tevfik Fikret","Yahya Kemal"],c:1},
+{q:"En küçük asal sayı hangisidir?",a:["0","1","2","3"],c:2},
+{q:"Hangi hayvan memeli değildir?",a:["Yarasa","Yunus","Balina","Penguen"],c:3},
+
+{q:"Dünyanın en yüksek dağı hangisidir?",a:["K2","Everest","Aconcagua","Elbrus"],c:1},
+{q:"Hangi vitamin güneşten alınır?",a:["A","B","C","D"],c:3},
+{q:"Bir yılda kaç ay vardır?",a:["10","11","12","13"],c:2},
+{q:"İlk yazıyı hangi uygarlık bulmuştur?",a:["Hititler","Sümerler","Mısırlılar","Fenikeliler"],c:1},
+{q:"Türkiye'nin en kalabalık şehri hangisidir?",a:["Ankara","İstanbul","İzmir","Bursa"],c:1},
+{q:"Hangisi bir elementtir?",a:["Su","Tuz","Oksijen","Şeker"],c:2},
+{q:"Dünya Günü hangi tarihte kutlanır?",a:["21 Mart","22 Nisan","5 Haziran","29 Ekim"],c:1},
+{q:"Hangi hayvan uçamaz?",a:["Yarasa","Serçe","Penguen","Kartal"],c:2},
+{q:"Bir haftada kaç gün vardır?",a:["5","6","7","8"],c:2},
+{q:"Türkiye'nin para birimi nedir?",a:["Euro","Dolar","Lira","Sterlin"],c:2},
+
+{q:"Hangi ülke Avrupa'da değildir?",a:["Fransa","Almanya","Japonya","İtalya"],c:2},
+{q:"Kalbin görevi nedir?",a:["Sindirim","Solunum","Kan pompalamak","Düşünmek"],c:2},
+{q:"Hangi gezegen en büyüktür?",a:["Mars","Dünya","Jüpiter","Satürn"],c:2},
+{q:"İnsan kaç duyuya sahiptir?",a:["4","5","6","7"],c:1},
+{q:"Hangisi bir kıta değildir?",a:["Asya","Afrika","Avrupa","Grönland"],c:3},
+{q:"Türkiye'nin en uzun nehri hangisidir?",a:["Kızılırmak","Fırat","Dicle","Sakarya"],c:0},
+{q:"Hangisi doğal gazdır?",a:["Oksijen","Helyum","Metan","Azot"],c:2},
+{q:"Ay'ın Dünya etrafındaki dönüş süresi yaklaşık kaç gündür?",a:["7","14","27","30"],c:2},
+{q:"Hangisi bir meyvedir?",a:["Havuç","Patates","Elma","Soğan"],c:2},
+{q:"Türkiye Cumhuriyeti ne zaman ilan edilmiştir?",a:["1920","1921","1922","1923"],c:3},
+
+{q:"Dünyanın en büyük çölü hangisidir?",a:["Sahra","Gobi","Arabistan","Antarktika"],c:3},
+{q:"Hangi hayvan sürüngendir?",a:["Kurbağa","Yılan","Balina","Kedi"],c:1},
+{q:"İlk insanlı aya iniş hangi yılda oldu?",a:["1965","1969","1972","1975"],c:1},
+{q:"Hangi renk ana renktir?",a:["Yeşil","Mor","Turuncu","Kırmızı"],c:3},
+{q:"Bir düzinede kaç tane vardır?",a:["10","11","12","13"],c:2},
+{q:"Hangi organ kanı temizler?",a:["Kalp","Böbrek","Akciğer","Mide"],c:1},
+{q:"Türkiye'nin en yüksek dağı hangisidir?",a:["Erciyes","Ağrı","Kaçkar","Uludağ"],c:1},
+{q:"Hangisi bir spor dalıdır?",a:["Satranç","Resim","Müzik","Tiyatro"],c:0},
+{q:"Hangi hayvan otçuldur?",a:["Aslan","Kaplan","İnek","Kurt"],c:2},
+{q:"Dünya'nın uydusu hangisidir?",a:["Mars","Venüs","Ay","Güneş"],c:2},
+
+{q:"Hangisi bir ulaşım aracıdır?",a:["Kalem","Gemi","Defter","Silgi"],c:1},
+{q:"En hızlı kara hayvanı hangisidir?",a:["At","Geyik","Çita","Aslan"],c:2},
+{q:"Türkiye hangi yarımkürededir?",a:["Güney","Doğu","Kuzey","Batı"],c:2},
+{q:"Hangisi bir gezegen değildir?",a:["Mars","Plüton","Venüs","Dünya"],c:1},
+{q:"Bir saatte kaç dakika vardır?",a:["30","45","60","90"],c:2},
+{q:"Hangisi bir müzik aletidir?",a:["Keman","Fırça","Cetvel","Defter"],c:0},
+{q:"Hangisi sıvıdır?",a:["Taş","Su","Demir","Tahta"],c:1},
+{q:"Türkiye'nin en büyük gölü hangisidir?",a:["Van","Tuz","Beyşehir","Eğirdir"],c:0},
+{q:"Hangisi bir meslektir?",a:["Doktor","Kalem","Defter","Masa"],c:0},
+{q:"Dünyanın şekli neye benzer?",a:["Kare","Üçgen","Küre","Dikdörtgen"],c:2},
+
+{q:"Hangisi bir hayvan değildir?",a:["Kedi","Köpek","Masa","At"],c:2},
+{q:"Hangi ay 30 çeker?",a:["Ocak","Şubat","Nisan","Mart"],c:2},
+{q:"Hangisi bir kıtadır?",a:["Türkiye","Asya","Rusya","İtalya"],c:1},
+{q:"Hangi organ solunumu sağlar?",a:["Kalp","Akciğer","Mide","Karaciğer"],c:1},
+{q:"Hangisi tatlı sudur?",a:["Deniz","Okyanus","Göl","Tuzlu göl"],c:2},
+{q:"Güneş ne tür bir gök cismidir?",a:["Gezegen","Yıldız","Uydu","Meteor"],c:1},
+{q:"Hangisi bir kuştur?",a:["Yarasa","Penguen","Serçe","Balina"],c:2},
+{q:"Türkiye'nin komşusu olmayan ülke hangisidir?",a:["Yunanistan","Bulgaristan","İran","Almanya"],c:3},
+{q:"Hangisi bir enerji kaynağıdır?",a:["Rüzgar","Taş","Toprak","Kum"],c:0},
+{q:"Hangisi bir sebzedir?",a:["Elma","Muz","Domates","Çilek"],c:2}
+];
+
+// ================== OYUN AYARLARI ==================
+const moneySteps=["500","1.000","5.000","10.000","25.000","50.000","100.000","250.000","500.000","750.000","1.000.000"];
+let questions=[],current=0,time=45,timer;
+let used={},doubleAnswer=false;
+
+const startScreen=document.getElementById("startScreen");
+const gameScreen=document.getElementById("gameScreen");
+const qEl=document.getElementById("question");
+const aEl=document.getElementById("answers");
+const tEl=document.getElementById("timer");
+const mEl=document.getElementById("money");
+
+// ================== OYUN AKIŞI ==================
+function startGame(){
+ startScreen.style.display="none";
+ gameScreen.style.display="block";
+ questions=[...pool].sort(()=>0.5-Math.random()).slice(0,11);
+ current=0; used={}; doubleAnswer=false;
+ document.querySelectorAll("#jokers button").forEach(b=>b.classList.remove("used"));
+ loadQuestion();
+}
+
+function resetGame(){
+ clearInterval(timer);
+ gameScreen.style.display="none";
+ startScreen.style.display="block";
+}
+
+function renderMoney(){
+ mEl.innerHTML="";
+ moneySteps.forEach((m,i)=>{
+  let d=document.createElement("div");
+  d.textContent=(i+1)+". "+m+" TL";
+  d.className="money-step";
+  if(i<current)d.classList.add("passed");
+  if(i===current)d.classList.add("active");
+  mEl.appendChild(d);
+ });
+}
+
+function startTimer(){
+ clearInterval(timer);
+ time=45;
+ tEl.textContent=time;
+ timer=setInterval(()=>{
+  time--;
+  tEl.textContent=time;
+  if(time<=0) answer(false,null);
+ },1000);
+}
+
+function loadQuestion(){
+ renderMoney();
+ aEl.innerHTML="";
+ qEl.textContent=questions[current].q;
+ questions[current].a.forEach((t,i)=>{
+  let b=document.createElement("button");
+  b.textContent=t;
+  b.onclick=()=>answer(i===questions[current].c,b);
+  aEl.appendChild(b);
+ });
+ startTimer();
+}
+
+function answer(correct,btn){
+ clearInterval(timer);
+
+ if(correct){
+  btn.classList.add("correct");
+  correctSound.play();
+  setTimeout(()=>{
+   current++;
+   if(current>=questions.length) resetGame();
+   else loadQuestion();
+  },3000);
+ }else{
+  if(doubleAnswer){
+   doubleAnswer=false;
+   btn.disabled=true;
+   return;
+  }
+  btn.classList.add("wrong");
+  wrongSound.play();
+  setTimeout(resetGame,3000);
+ }
+}
+
+// ================== JOKER SİSTEMİ ==================
+function useJoker(id,fn){
+ if(used[id]) return;
+ used[id]=true;
+ document.getElementById(id).classList.add("used");
+ fn();
+}
+
+// ================== JOKERLER ==================
+function joker5050(){
+ const correct=questions[current].c;
+ let removed=0;
+ document.querySelectorAll(".answers button").forEach((b,i)=>{
+  if(i!==correct && removed<2){
+   b.style.display="none";
+   removed++;
+  }
+ });
+}
+
+function jokerAudience(){
+ const c=questions[current].c;
+ alert(
+  "Seyirci oyları:\n" +
+  questions[current].a.map((x,i)=> (i===c?"%70 ":"%10 ")+x).join("\n")
+ );
+}
+
+function jokerPhone(){
+ alert("Telefon jokeri:\nCevap: "+questions[current].a[questions[current].c]);
+}
+
+function jokerDouble(){
+ doubleAnswer=true;
+ alert("Çift cevap aktif. Bir yanlış yapma hakkın var.");
+}
+
+function jokerTime(){
+ time+=15;
+ tEl.textContent=time;
+}
+
+function jokerChange(){
+ clearInterval(timer);
+ let next;
+ do{
+  next=Math.floor(Math.random()*questions.length);
+ }while(next===current);
+ current=next;
+ loadQuestion();
+}
+
+function jokerRemove(){
+ const btns=[...document.querySelectorAll(".answers button")];
+ const wrongs=btns.filter((b,i)=>i!==questions[current].c && !b.disabled);
+ if(wrongs.length>0){
+  wrongs[Math.floor(Math.random()*wrongs.length)].disabled=true;
+ }
+}
+</script>
+</body>
+</html>
